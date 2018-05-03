@@ -1,34 +1,22 @@
 """Syslog server."""
-from abc import ABC, abstractmethod
-
 import asyncio
 import typing as t
 
 import attr
-
-
-class AbstractMessageLogger(ABC):
-    """Abstract writer to access log."""
-
-    def __init__(self, logger):
-        self.logger = logger
-
-    @abstractmethod
-    def log(self, message, addr):
-        """Emit log to logger."""
-
-    @abstractmethod
-    def exception(self, addr):
-        """Emit log to logger."""
+from .abc import AbstractMessageLogger
 
 
 class MessageLogger(AbstractMessageLogger):
+    def __init__(self):
+        import logging
+        self.logger = logging.getLogger(__name__)
+
     def log(self, message, addr):
         self.logger.info(message)
 
     def exception(self, addr):
-        self.serverlogger.exception(
-            f'Failed to parse syslog message from {addr[0]}')
+        self.logger.exception('Failed to parse syslog message from {}'.format(
+            addr[0]))
 
 
 @attr.s(auto_attribs=True)
@@ -39,13 +27,13 @@ class SyslogProtocol(asyncio.Protocol):
     def datagram_received(self, data: bytes, addr: t.Tuple[str, int]):
         """Handle incoming package."""
         try:
-            message = self.server.message_class.parse(
-                data.strip().decode('utf-8'))
+            message = self.server.message_class.parse(data)
             self.server.logger.log(message, addr)
-        except Exception:
-            self.server.logger.exception(message, addr)
+        except Exception as exc_info:
+            self.server.logger.exception(exc_info, addr)
 
 
+@attr.s
 class SyslogServer:
     """Server to receive incoming syslog messages."""
     message_class = attr.ib()
@@ -64,7 +52,7 @@ class SyslogServer:
 
     async def run(self, local_addr: t.Tuple[str, int] = None) -> None:
         """Start listening for incoming syslog messages."""
-        connection = await self.loop.create_datagram_endpoint(
+        connection = await self._loop.create_datagram_endpoint(
             lambda: SyslogProtocol(self),
             local_addr=local_addr or ('0.0.0.0', 514))
 
