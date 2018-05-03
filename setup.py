@@ -18,6 +18,7 @@ setup(
     packages=find_packages(exclude=('tests')),
     license='Apache 2',
     url='https://github.com/sangoma/aiosyslog',
+    install_requires=['attrs'],
     description='Asyncio syslog server',
     long_description=read('README.rst'),
     classifiers=[
