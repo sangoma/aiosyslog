@@ -44,7 +44,7 @@ class SyslogServer:
     logger = attr.ib(init=False)
 
     _loop: asyncio.BaseEventLoop = attr.ib(
-        init=False, default=attr.Factory(asyncio.get_event_loop))
+        init=False, factory=asyncio.get_event_loop)
 
     @logger.default
     def get_logger(self):
